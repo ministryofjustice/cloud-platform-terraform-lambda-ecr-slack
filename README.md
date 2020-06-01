@@ -14,38 +14,22 @@ Be sure to create the relevant providers, see example/main.tf
 Bucket first created that will contain the slack tokens. 
 ```hcl
 
-module "webops_ecr_scan_repos_s3_bucket_team" {
-  source = "github.com/ministryofjustice/cloud-platform-terraform-s3-bucket?ref=4.1"
-    
-  team_name              = "cloudplatform"
-  business-unit          = "webops"
-  application            = "cloud-platform-terraform-s3-bucket-ecr-scan-slack"
-  is-production          = "false"
-  environment-name       = "development"
-  infrastructure-support = "platform@digtal.justice.gov.uk"
+module "example_team_ecr_scan_lambda" {
 
-  providers = {
-    aws = aws.london
-  }
-}
-
-
-module "example_team_lambda" {
+  source                     = "git::ssh://git@github.com/ministryofjustice/cloud-platform-terraform-lambda?ref=v1.5"
+  function_name              = "example-function-name"
+  handler                    = "lambda_ecr-scan-slack.lambda_handler"
+  lambda_role_name           = "example-team-role-name"
+  lambda_policy_name         = "example-team-policy-name"
+  lambda_zip_source_location = "${path.module}/resources/ecr/lambda-zip"
+  lambda_zip_output_location = "${path.module}/resources/ecr/lambda-function.zip"
+  slack_token                = var.slack_token
+  ecr_repo                   = var.ecr_repo
   
-  source = "git::ssh://git@github.com/ministryofjustice/cloud-platform-terraform-lambda?ref=v1.5"
-  policy_file              = file("policy-lambda.json")
-  function_name            = "ecr-lambda-function"
-  handler                  = "lambda_ecr-scan-slack.lambda_handler"
-  lambda_role_name         = "lambda-role-ecr"
-  lambda_policy_name       = "lambda-pol-ecr"
-  lambda_zip_source_location = "resources/ecr/lambda-zip"
-  lambda_zip_output_location = "resources/ecr/lambda-function.zip"
-
   providers = {
     aws = aws.london
   }
 }
-
 
 
 ```
@@ -54,8 +38,8 @@ module "example_team_lambda" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|:----:|:-----:|:-----:|
-| lambda_function_zip_path | name of the zipped archive of the lambda function | string | `""` | yes |
-| policy_file | Name of the policy of used by the lambda role | string | `policy-lambda.json` | yes |
+| lambda_function_zip_source_path | path of the directory containing the lambda function | string | `""` | yes |
+| lambda_function_zip_output_path | name of the zipped archive of the lambda function | string | `""` | yes |
 | function_name | AWS name of the lambda function| string | `""` | yes |
 | handler | Hanler of the lambda function to be executed| string | `""` | yes |
 | providers | provider to use | array of string | default provider | no
@@ -65,7 +49,7 @@ module "example_team_lambda" {
 
 | Name | Description |
 |------|-------------|
-| function_name | Name of the lambda function |
+| arn | arn lambda function (e.g can be used as input for event bridge) |
 
 
 ### Lambda bucket policy

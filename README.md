@@ -16,7 +16,7 @@ Bucket first created that will contain the slack tokens.
 
 module "example_team_ecr_scan_lambda" {
 
-  source                     = "git::ssh://git@github.com/ministryofjustice/cloud-platform-terraform-lambda?ref=v1.5"
+  source                     = "git::ssh://git@github.com/ministryofjustice/cloud-platform-terraform-lambda?ref=v1.0"
   function_name              = "example-function-name"
   handler                    = "lambda_ecr-scan-slack.lambda_handler"
   lambda_role_name           = "example-team-role-name"

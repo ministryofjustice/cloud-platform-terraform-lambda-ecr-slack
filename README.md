@@ -1,4 +1,4 @@
-# cloud-platform-terraform-lambda module
+# cloud-platform-terraform-lambda-ecr-slack module
 
 [![Releases](https://img.shields.io/github/release/ministryofjustice/cloud-platform-terraform-lambda/all.svg?style=flat-square)](https://github.com/ministryofjustice/cloud-platform-terraform-lambda/releases)
 

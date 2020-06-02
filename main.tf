@@ -58,6 +58,13 @@ data "archive_file" "lambda_zip" {
   source_dir  = "${path.module}/resources/lambda"
 }
 
+data "kubernetes_secret" "slack_cred" {
+  metadata {
+    name      = var.slack_secret
+    namespace = var.namespace
+  }
+}
+
 resource "aws_lambda_function" "lambda_function" {
   filename      = "${path.module}/lambda.zip"
   function_name = var.function_name
@@ -67,13 +74,14 @@ resource "aws_lambda_function" "lambda_function" {
 
   environment {
     variables = {
-      ECR_REPO    = var.ecr_repo
-      SLACK_TOKEN = var.slack_token
+      ECR_REPO    = data.kubernetes_secret.slack_cred.data["token"]
+      SLACK_TOKEN = data.kubernetes_secret.slack_cred.data["repo"]
     }
   }
 
-  depends_on = [data.archive_file.lambda_zip]
+  depends_on = [data.archive_file.lambda_zip, data.kubernetes_secret.slack_cred]
 }
+
 
 resource "aws_cloudwatch_event_rule" "aws_cloudwatch_event_rule" {
   name          = var.function_name

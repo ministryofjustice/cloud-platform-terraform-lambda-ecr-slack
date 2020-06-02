@@ -19,7 +19,7 @@ module "ecr_credentials" {
 resource "kubernetes_secret" "ecr_credentials" {
   metadata {
     name      = "ecr-credentials-output"
-    namespace = "my-namespace"
+    namespace = "<NAMESPACE>"
   }
 
   data = {
@@ -30,13 +30,6 @@ resource "kubernetes_secret" "ecr_credentials" {
   }
 }
 
-data "kubernetes_secret" "slack_cred" {
-  metadata {
-    name      = "my-slack-secret-name"
-    namespace = "my-namespace"
-  }
-}
-
 module "ecr_scan_lambda" {
 
   source                     = "github.com/ministryofjustice/cloud-platform-terraform-lambda-ecr-slack?ref=v1.0"
@@ -44,8 +37,9 @@ module "ecr_scan_lambda" {
   handler                    = "lambda_ecr-scan-slack.lambda_handler"
   lambda_role_name           = "example-team-role-name"
   lambda_policy_name         = "example-team-policy-name"
-  slack_token                = "${data.kubernetes_secret.slack_cred.data["token"]}"
-  ecr_repo                   = "${data.kubernetes_secret.slack_cred.data["repo"]}"
+  slack_secret               = "<SLACK_SECRET>"
+  namespace                  = "<NAMESPACE>"
+
 }
 
 

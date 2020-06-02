@@ -74,8 +74,8 @@ resource "aws_lambda_function" "lambda_function" {
 
   environment {
     variables = {
-      ECR_REPO    = data.kubernetes_secret.slack_cred.data["token"]
-      SLACK_TOKEN = data.kubernetes_secret.slack_cred.data["repo"]
+      ECR_REPO    = data.kubernetes_secret.slack_cred.data["repo"]
+      SLACK_TOKEN = data.kubernetes_secret.slack_cred.data["token"]
     }
   }
 

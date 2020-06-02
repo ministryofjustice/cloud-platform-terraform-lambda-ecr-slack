@@ -68,7 +68,7 @@ data "kubernetes_secret" "slack_cred" {
 resource "aws_lambda_function" "lambda_function" {
   filename      = "${path.module}/lambda.zip"
   function_name = var.function_name
-  handler       = var.handler
+  handler       = "lambda_ecr-scan-slack.lambda_handler"
   role          = aws_iam_role.lambda_role.arn
   runtime       = "python3.8"
 

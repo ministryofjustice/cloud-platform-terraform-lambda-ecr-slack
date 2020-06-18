@@ -8,103 +8,56 @@ The lambda
 
 ## Usage
 
-**This module will create the resources in the region of the providers specified in the *providers* input.
-Be sure to create the relevant providers, see example/main.tf
 
-Bucket first created that will contain the slack tokens. 
+To send notifications to slack of the ECR image scan results, you may insert the following lambda module that creates the slack lambda function and the event bridge. 
+
+The event bridge will be triggered every time there is a scan completed for your ECR repo. The event bridge executes the lambda function which then interacts with slack. A notification containing the scan result will then be sent to your slack channel as per the slack token you specify.
+
+The lambda function incorporates the slack token and ECR repository when it is created. The slack_token and ECR repository must be stored as a kubernetes secret, which you must create as follows:
+
+This secret needs to have the following two keys:
+
+Key 1: repo (without the prefix e.g if the url is 754256621582.dkr.ecr.eu-west-2.amazonaws.com/webops/webops-ecr1:rails, then in this case you need to supply 'webops/webops-ecr1')
+Key 2: token
+
+Below is a sample kubernetes secret yaml you can use to create the secret containing the slack token and ECR repo: 
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <SLACK_SECRET_NAME>
+  namespace: <NAMESPACE>
+data:
+  repo: <ECR_REPO_BASE64_ENCODED>
+  token: <SLACK_TOKEN_BASE64_ENDCODED>
+
+Note that the <ECR_REPO_BASE64_ENCODED> and <SLACK_TOKEN_BASE64_ENDCODED> must be encoded as base64.
+e.g 'echo -n <SLACK_TOKEN> | base64'
+
+As this file will contain the slack token it is important that it is encyrpted within the repo that has git-encrypt. Also the file must reside within your own team's repo and not a repo that is shared between teams such as the 'cloud-platform-environments'.
+
+Save the above secret yaml with the desired name and create the secret as follows: 
+
+kubectl create -f <SLACK_SECRET_FILE_NAME>
+
+Lastly, after you have created your kubernetes slack secret as above, move the following lambda module outside the comments section so that it is created alongside your ECR resource. 
+
 ```hcl
+module "ecr_scan_lambda" {
 
-module "example_team_ecr_scan_lambda" {
-
-  source                     = "git::ssh://git@github.com/ministryofjustice/cloud-platform-terraform-lambda?ref=v1.0"
+  source                     = "github.com/ministryofjustice/cloud-platform-terraform-lambda-ecr-slack?ref=v1.0"
+  # Function name can be as desired but unique, ideally prefixed with team name and the purpose of the function e.g 'webops_ecr_scan_function'
   function_name              = "example-function-name"
-  handler                    = "lambda_ecr-scan-slack.lambda_handler"
+  # Lambda role name as desired but unique ideally prefixed with team name e.g webops_ecr_scan_role
   lambda_role_name           = "example-team-role-name"
+  # Lambda policy name as desired but unique ideally prefixed with team name e.g webops_ecr_scan_policy
   lambda_policy_name         = "example-team-policy-name"
-  lambda_zip_source_location = "${path.module}/resources/ecr/lambda-zip"
-  lambda_zip_output_location = "${path.module}/resources/ecr/lambda-function.zip"
-  slack_token                = var.slack_token
-  ecr_repo                   = var.ecr_repo
-  
-  providers = {
-    aws = aws.london
-  }
+  slack_secret               = "<SLACK_SECRET_NAME>"
+  namespace                  = "<NAMESPACE>"
+
 }
 
-
 ```
-
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|:----:|:-----:|:-----:|
-| lambda_function_zip_source_path | path of the directory containing the lambda function | string | `""` | yes |
-| lambda_function_zip_output_path | name of the zipped archive of the lambda function | string | `""` | yes |
-| function_name | AWS name of the lambda function| string | `""` | yes |
-| handler | Hanler of the lambda function to be executed| string | `""` | yes |
-| providers | provider to use | array of string | default provider | no
-
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| arn | arn lambda function (e.g can be used as input for event bridge) |
-
-
-### Lambda bucket policy
-
-The policy referenced by the lambda role is to be created as a json file and saved in the root directory from which you are 
-calling the file. e.g create a file named 'policy-lambda.json'. Below is an example policy that gives the lambda role
-the relevant permissions to interact with ECR and S3.
-
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:GetRepositoryPolicy",
-                "ecr:DescribeRepositories",
-                "ecr:ListImages",
-                "ecr:DescribeImages",
-                "ecr:BatchGetImage",
-                "ecr:GetLifecyclePolicy",
-                "ecr:GetLifecyclePolicyPreview",
-                "ecr:ListTagsForResource",
-                "ecr:DescribeImageScanFindings",
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-                "xray:GetSamplingStatisticSummaries",
-                "s3:Get*",
-                "s3:List*",
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-```
-
-The lambda function itself should be named appropriately based on what it does. For example a lambda function that uses python to notiify slack of ECR scanned results would be named as 'lambda_ecr-scan-slack.py'. You can zip this file where the name of the zipped file can be the same name of the lambda file e.g lambda_ecr-scan-slack.zip
-
-Create the zipped file as follows:
-
-```bash
-zip lambda_ecr-scan-slack.zip lambda_ecr-scan-slack.py
-```
-
-Finally you can then append the name of the zipped file as the 'lambda_function_zip_path' variable when calling the module.
-So in this example the value of the 'lambda_function_zip_path' var will be 'lambda_ecr-scan-slack.zip'. See example folder for more details. 
 
 
 

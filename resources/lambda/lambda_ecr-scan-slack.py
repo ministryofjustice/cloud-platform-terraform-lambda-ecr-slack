@@ -75,14 +75,6 @@ def get_params(scan_result):
     }
     return slack_message
 
-def get_slack_token(scan_result):
-
-    s3 = boto3.client('s3')
-    data = s3.get_object(Bucket='cloud-platform-847a1c6f71164b33355832fb22799e34', Key=scan_result['repositoryName']+'.txt')
-    contents = data['Body'].read()
-    webhook_url = 'https://hooks.slack.com/services/T02DYEB3A/'+contents.decode("utf-8")
-    return webhook_url
-
 def get_findings(detail):
     """Returns the image scan findings summary"""
     ecr = boto3.client('ecr')
@@ -114,7 +106,6 @@ def lambda_handler(event, context):
     if os.environ['ECR_REPO'] == get_actual_repo(scan_result):
 
         slack_message = get_params(scan_result)
-        #req = Request(get_slack_token(scan_result), json.dumps(slack_message).encode('utf-8'))
         webhook_url_prefix = 'https://hooks.slack.com/services/T02DYEB3A/'
         req = Request(webhook_url_prefix+os.environ['SLACK_TOKEN'], json.dumps(slack_message).encode('utf-8'))
         try:
